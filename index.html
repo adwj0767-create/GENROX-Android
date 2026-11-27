@@ -1,63 +1,101 @@
-
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GENROX</title>
+<title>GENROX VIDEO EDITOR</title>
 <style>
 *{box-sizing:border-box}
 body{
-margin:0;
-background:#080808;
-color:white;
-font-family:Arial,sans-serif;
-text-align:center;
+ margin:0;background:#080808;color:white;
+ font-family:Arial,sans-serif;padding:20px;
 }
-header{
-padding:35px 15px;
-background:#111;
-border-bottom:1px solid #333;
+header{text-align:center;padding:25px 0}
+.logo{font-size:38px;font-weight:bold;color:#d6ad52;letter-spacing:3px}
+.sub{color:#aaa;font-size:12px;letter-spacing:2px}
+h2{color:#d6ad52;font-size:19px}
+.panel{
+ background:#151515;border:1px solid #4c3b1d;
+ border-radius:15px;padding:18px;margin:15px 0;
 }
-h1{
-font-size:42px;
-letter-spacing:4px;
-color:#d5b36a;
-margin:0;
+button,.upload{
+ display:block;width:100%;padding:15px;
+ background:linear-gradient(90deg,#a77b29,#f2d17b);
+ color:#111;border:0;border-radius:10px;
+ font-weight:bold;font-size:16px;text-align:center;
+ margin-top:12px;cursor:pointer;
 }
-p{color:#aaa}
-main{padding:25px}
-.card{
-background:#151515;
-border:1px solid #333;
-border-radius:16px;
-padding:25px;
-margin:15px auto;
-max-width:420px;
+video{
+ width:100%;background:#000;border-radius:10px;
+ margin-top:15px;max-height:350px;
 }
-button{
-background:#d5b36a;
-border:0;
-border-radius:10px;
-padding:14px 25px;
-font-size:17px;
-font-weight:bold;
-}
+#videoArea{display:none}
+.info{color:#bbb;font-size:13px;margin-top:12px}
+footer{text-align:center;color:#777;font-size:12px;margin:30px 0}
+input[type=file]{display:none}
 </style>
 </head>
 <body>
+
 <header>
-<h1>GENROX</h1>
-<p>استوديو الإبداع الرقمي</p>
+ <div class="logo">GENROX</div>
+ <div class="sub">PRO VIDEO EDITOR</div>
 </header>
-<main>
-<div class="card">
-<h2>مرحباً بك في GENROX</h2>
-<p>ابدأ رحلتك في عالم صناعة المحتوى.</p>
-<button onclick="alert('أهلاً بك في GENROX')">
-ابدأ الآن
-</button>
+
+<div class="panel">
+ <h2>استوديو المونتاج</h2>
+ <p>ابدأ مشروعك واختر فيديو من هاتفك.</p>
+ <label class="upload" for="videoInput">
+   + اختيار فيديو من الهاتف
+ </label>
+ <input id="videoInput" type="file" accept="video/*">
 </div>
-</main>
+
+<div class="panel" id="videoArea">
+ <h2>معاينة الفيديو</h2>
+ <video id="preview" controls playsinline></video>
+ <div class="info" id="videoInfo"></div>
+ <button id="removeBtn">إزالة الفيديو</button>
+</div>
+
+<div class="panel">
+ <h2>أدوات المشروع</h2>
+ <p>اختيار الفيديو: متاح</p>
+ <p>معاينة الفيديو: متاحة</p>
+ <p>أدوات القص والدمج: قيد التطوير</p>
+</div>
+
+<footer>GENROX © 2026</footer>
+
+<script>
+const input=document.getElementById('videoInput');
+const preview=document.getElementById('preview');
+const area=document.getElementById('videoArea');
+const info=document.getElementById('videoInfo');
+let videoURL=null;
+
+input.addEventListener('change',()=>{
+ const file=input.files[0];
+ if(!file)return;
+ if(videoURL)URL.revokeObjectURL(videoURL);
+ videoURL=URL.createObjectURL(file);
+ preview.src=videoURL;
+ area.style.display='block';
+ info.textContent='اسم الفيديو: '+file.name+
+ ' | الحجم: '+(file.size/1024/1024).toFixed(2)+' MB';
+});
+
+document.getElementById('removeBtn').onclick=()=>{
+ preview.pause();
+ preview.removeAttribute('src');
+ preview.load();
+ if(videoURL)URL.revokeObjectURL(videoURL);
+ videoURL=null;
+ input.value='';
+ area.style.display='none';
+ info.textContent='';
+};
+</script>
+
 </body>
 </html>

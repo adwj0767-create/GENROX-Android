@@ -1,40 +1,392 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#090909">
+<title>GENROX VIDEO EDITOR</title>
+<style>
+:root {
+  --gold:#d8b45c;
+  --bg:#090909;
+  --panel:#171717;
+  --muted:#999;
+}
+* {box-sizing:border-box}
+body {
+  margin:0;
+  background:var(--bg);
+  color:white;
+  font-family:Arial,sans-serif;
+}
+header {
+  padding:17px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  border-bottom:1px solid #292929;
+}
+.logo {
+  color:var(--gold);
+  font-size:25px;
+  font-weight:900;
+  letter-spacing:2px;
+}
+header small {color:#aaa}
+main {max-width:850px;margin:auto;padding:14px}
+.section {
+  background:var(--panel);
+  border:1px solid #292929;
+  border-radius:15px;
+  padding:14px;
+  margin-bottom:13px;
+}
+h3 {
+  margin:0 0 13px;
+  color:var(--gold);
+  font-size:16px;
+}
+.preview {
+  background:#000;
+  border-radius:12px;
+  min-height:210px;
+  aspect-ratio:16/9;
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden;
+}
+video {
+  width:100%;
+  height:100%;
+  object-fit:contain;
+}
+#overlay {
+  position:absolute;
+  left:0;
+  right:0;
+  text-align:center;
+  font-weight:bold;
+  pointer-events:none;
+  text-shadow:2px 2px 5px #000;
+  padding:10px;
+}
+#overlay.top {top:10px}
+#overlay.center {top:50%;transform:translateY(-50%)}
+#overlay.bottom {bottom:10px}
+.placeholder {color:#777;text-align:center}
+button,.upload {
+  background:#242424;
+  color:white;
+  border:1px solid #414141;
+  border-radius:9px;
+  padding:11px 13px;
+  cursor:pointer;
+  font-size:13px;
+}
+button.primary,.upload {
+  background:var(--gold);
+  color:#111;
+  border-color:var(--gold);
+  font-weight:bold;
+}
+.controls {
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-top:12px;
+}
+input,select {
+  width:100%;
+  background:#101010;
+  color:white;
+  border:1px solid #414141;
+  border-radius:8px;
+  padding:10px;
+  margin:6px 0 12px;
+}
+input[type=color] {height:42px;padding:4px}
+input[type=range] {accent-color:var(--gold)}
+label {font-size:13px;color:#bbb}
+.grid {
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+.timeline {
+  width:100%;
+  accent-color:var(--gold);
+}
+.time {
+  display:flex;
+  justify-content:space-between;
+  color:#aaa;
+  font-size:12px;
+}
+.tool-grid {
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:8px;
+}
+.tool-grid button {min-height:65px}
+footer {
+  text-align:center;
+  color:#777;
+  padding:20px;
+  font-size:12px;
+}
+@media(max-width:450px) {
+  main {padding:9px}
+  .grid {grid-template-columns:1fr}
+  .tool-grid {grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
 
-name: Deploy GENROX to GitHub Pages
+<header>
+  <div>
+    <div class="logo">GENROX</div>
+    <small>VIDEO EDITOR</small>
+  </div>
+  <small>PRO STUDIO</small>
+</header>
 
-on:
-  push:
-    branches:
-      - main
-  workflow_dispatch:
+<main>
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
+<div class="section">
+  <h3>استوديو المعاينة</h3>
+  <div class="preview" id="preview">
+    <video id="video" playsinline></video>
+    <div id="overlay" class="center"></div>
+    <div class="placeholder" id="placeholder">
+      اختر فيديو لبدء المونتاج
+    </div>
+  </div>
 
-concurrency:
-  group: pages
-  cancel-in-progress: true
+  <div class="controls">
+    <label class="upload">
+      ＋ استيراد فيديو
+      <input id="videoFile" type="file" accept="video/*" hidden>
+    </label>
+    <button class="primary" id="play">▶ تشغيل</button>
+    <button id="pause">Ⅱ إيقاف</button>
+  </div>
+</div>
 
-jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
+<div class="section">
+  <h3>الخط الزمني</h3>
+  <input class="timeline" id="seek" type="range"
+    min="0" max="100" value="0">
+  <div class="time">
+    <span id="current">00:00</span>
+    <span id="duration">00:00</span>
+  </div>
+  <label>سرعة الفيديو</label>
+  <select id="speed">
+    <option value="0.25">0.25x</option>
+    <option value="0.5">0.5x</option>
+    <option value="1" selected>1x عادي</option>
+    <option value="1.5">1.5x</option>
+    <option value="2">2x</option>
+  </select>
+</div>
 
-    steps:
-      - name: Download repository
-        uses: actions/checkout@v6
+<div class="section">
+  <h3>الكتابة على الفيديو</h3>
+  <label>النص</label>
+  <input id="textInput" placeholder="اكتب النص هنا">
+  <div class="grid">
+    <div>
+      <label>لون الكتابة</label>
+      <input type="color" id="textColor" value="#ffffff">
+    </div>
+    <div>
+      <label>حجم الخط</label>
+      <input type="range" id="textSize"
+        min="16" max="65" value="30">
+    </div>
+  </div>
+  <label>مكان الكتابة</label>
+  <select id="textPosition">
+    <option value="top">أعلى الفيديو</option>
+    <option value="center" selected>منتصف الفيديو</option>
+    <option value="bottom">أسفل الفيديو</option>
+  </select>
+  <button class="primary" id="clearText">مسح الكتابة</button>
+</div>
 
-      - name: Configure GitHub Pages
-        uses: actions/configure-pages@v5
+<div class="section">
+  <h3>الفلاتر والتأثيرات</h3>
+  <div class="tool-grid">
+    <button data-filter="none">عادي</button>
+    <button data-filter="grayscale(1)">أبيض وأسود</button>
+    <button data-filter="sepia(1)">كلاسيك</button>
+    <button data-filter="contrast(1.4)">تباين</button>
+    <button data-filter="brightness(1.25)">إضاءة</button>
+    <button data-filter="saturate(1.8)">ألوان قوية</button>
+  </div>
+</div>
 
-      - name: Upload website files
-        uses: actions/upload-pages-artifact@v4
-        with:
-          path: .
+<div class="section">
+  <h3>الصوت والموسيقى</h3>
+  <label class="upload">
+    ＋ إضافة ملف صوتي
+    <input id="audioFile" type="file"
+      accept="audio/*" hidden>
+  </label>
+  <audio id="audio" controls style="width:100%;margin-top:12px"></audio>
+  <label>مستوى الصوت</label>
+  <input type="range" id="volume"
+    min="0" max="1" step="0.05" value="1">
+</div>
 
-      - name: Publish GENROX
-        id: deployment
-        uses: actions/deploy-pages@v4
+<div class="section">
+  <h3>أدوات GENROX</h3>
+  <div class="tool-grid">
+    <button id="reset">إعادة ضبط المعاينة</button>
+    <button id="fullscreen">ملء الشاشة</button>
+    <button id="mute">كتم الصوت</button>
+  </div>
+</div>
+
+</main>
+
+<footer>
+  GENROX STUDIO · CREATE YOUR OWN STYLE
+</footer>
+
+<script>
+const video = document.getElementById("video");
+const audio = document.getElementById("audio");
+const overlay = document.getElementById("overlay");
+const placeholder = document.getElementById("placeholder");
+
+const videoFile = document.getElementById("videoFile");
+const audioFile = document.getElementById("audioFile");
+
+function formatTime(seconds) {
+  if (!Number.isFinite(seconds)) return "00:00";
+  const m = Math.floor(seconds / 60);
+  const s = Math.floor(seconds % 60);
+  return String(m).padStart(2,"0") + ":" +
+         String(s).padStart(2,"0");
+}
+
+videoFile.addEventListener("change", e => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  video.pause();
+  if (video.dataset.url) URL.revokeObjectURL(video.dataset.url);
+
+  const url = URL.createObjectURL(file);
+  video.dataset.url = url;
+  video.src = url;
+  video.load();
+  placeholder.style.display = "none";
+});
+
+video.addEventListener("loadedmetadata", () => {
+  document.getElementById("duration").textContent =
+    formatTime(video.duration);
+});
+
+document.getElementById("play").onclick = () => {
+  if (video.src) video.play();
+};
+
+document.getElementById("pause").onclick = () => {
+  video.pause();
+};
+
+video.addEventListener("play", () => {
+  document.getElementById("play").textContent = "▶ يعمل الآن";
+});
+
+video.addEventListener("pause", () => {
+  document.getElementById("play").textContent = "▶ تشغيل";
+});
+
+video.addEventListener("timeupdate", () => {
+  if (!video.duration) return;
+  document.getElementById("seek").value =
+    (video.currentTime / video.duration) * 100;
+  document.getElementById("current").textContent =
+    formatTime(video.currentTime);
+});
+
+document.getElementById("seek").oninput = e => {
+  if (video.duration) {
+    video.currentTime = video.duration *
+      (Number(e.target.value) / 100);
+  }
+};
+
+document.getElementById("speed").onchange = e => {
+  video.playbackRate = Number(e.target.value);
+};
+
+function updateText() {
+  overlay.textContent =
+    document.getElementById("textInput").value;
+  overlay.style.color =
+    document.getElementById("textColor").value;
+  overlay.style.fontSize =
+    document.getElementById("textSize").value + "px";
+  overlay.className =
+    document.getElementById("textPosition").value;
+}
+
+["textInput","textColor","textSize","textPosition"]
+.forEach(id => {
+  document.getElementById(id).addEventListener("input",updateText);
+  document.getElementById(id).addEventListener("change",updateText);
+});
+
+document.getElementById("clearText").onclick = () => {
+  document.getElementById("textInput").value = "";
+  updateText();
+};
+
+document.querySelectorAll("[data-filter]").forEach(button => {
+  button.onclick = () => {
+    video.style.filter = button.dataset.filter;
+  };
+});
+
+audioFile.addEventListener("change", e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  audio.src = URL.createObjectURL(file);
+});
+
+document.getElementById("volume").oninput = e => {
+  video.volume = Number(e.target.value);
+  audio.volume = Number(e.target.value);
+};
+
+document.getElementById("mute").onclick = () => {
+  video.muted = !video.muted;
+  document.getElementById("mute").textContent =
+    video.muted ? "إلغاء كتم الصوت" : "كتم الصوت";
+};
+
+document.getElementById("fullscreen").onclick = () => {
+  const box = document.getElementById("preview");
+  if (box.requestFullscreen) box.requestFullscreen();
+};
+
+document.getElementById("reset").onclick = () => {
+  video.pause();
+  video.currentTime = 0;
+  video.playbackRate = 1;
+  video.style.filter = "none";
+  document.getElementById("speed").value = "1";
+  document.getElementById("seek").value = 0;
+  updateText();
+};
+</script>
+</body>
+</html>

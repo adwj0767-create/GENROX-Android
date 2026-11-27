@@ -2,100 +2,127 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>GENROX VIDEO EDITOR</title>
 <style>
 *{box-sizing:border-box}
-body{
- margin:0;background:#080808;color:white;
- font-family:Arial,sans-serif;padding:20px;
-}
-header{text-align:center;padding:25px 0}
-.logo{font-size:38px;font-weight:bold;color:#d6ad52;letter-spacing:3px}
-.sub{color:#aaa;font-size:12px;letter-spacing:2px}
-h2{color:#d6ad52;font-size:19px}
-.panel{
- background:#151515;border:1px solid #4c3b1d;
- border-radius:15px;padding:18px;margin:15px 0;
-}
-button,.upload{
- display:block;width:100%;padding:15px;
- background:linear-gradient(90deg,#a77b29,#f2d17b);
- color:#111;border:0;border-radius:10px;
- font-weight:bold;font-size:16px;text-align:center;
- margin-top:12px;cursor:pointer;
-}
-video{
- width:100%;background:#000;border-radius:10px;
- margin-top:15px;max-height:350px;
-}
-#videoArea{display:none}
-.info{color:#bbb;font-size:13px;margin-top:12px}
-footer{text-align:center;color:#777;font-size:12px;margin:30px 0}
+body{margin:0;background:#080808;color:#fff;font-family:Arial;padding:18px}
+header{text-align:center;padding:20px}
+.logo{font-size:38px;color:#d8b45b;font-weight:bold;letter-spacing:3px}
+.sub{color:#aaa;font-size:12px}
+.panel{background:#171717;border:1px solid #66502a;border-radius:15px;padding:18px;margin:15px 0}
+h2{color:#e0bd69;font-size:19px}
+button,.upload{display:block;width:100%;padding:14px;background:linear-gradient(90deg,#a77b29,#f2d17b);color:#111;border:0;border-radius:9px;font-weight:bold;font-size:16px;margin-top:12px;text-align:center}
 input[type=file]{display:none}
+video{width:100%;background:#000;border-radius:10px;margin-top:12px;max-height:350px}
+input[type=range]{width:100%;accent-color:#d8b45b}
+.time{display:flex;justify-content:space-between;color:#ddd;font-size:13px}
+.info{color:#bbb;font-size:13px}
+footer{text-align:center;color:#888;margin:30px}
 </style>
 </head>
 <body>
-
 <header>
- <div class="logo">GENROX</div>
- <div class="sub">PRO VIDEO EDITOR</div>
+<div class="logo">GENROX</div>
+<div class="sub">PRO VIDEO EDITOR</div>
 </header>
 
 <div class="panel">
- <h2>استوديو المونتاج</h2>
- <p>ابدأ مشروعك واختر فيديو من هاتفك.</p>
- <label class="upload" for="videoInput">
-   + اختيار فيديو من الهاتف
- </label>
- <input id="videoInput" type="file" accept="video/*">
+<h2>استوديو المونتاج</h2>
+<p>اختر فيديو من هاتفك لبدء التحرير.</p>
+<label class="upload" for="videoInput">+ اختيار فيديو</label>
+<input id="videoInput" type="file" accept="video/*">
 </div>
 
-<div class="panel" id="videoArea">
- <h2>معاينة الفيديو</h2>
- <video id="preview" controls playsinline></video>
- <div class="info" id="videoInfo"></div>
- <button id="removeBtn">إزالة الفيديو</button>
+<div class="panel" id="editor" hidden>
+<h2>معاينة الفيديو</h2>
+<video id="preview" controls playsinline></video>
+<p class="info" id="videoInfo"></p>
 </div>
 
-<div class="panel">
- <h2>أدوات المشروع</h2>
- <p>اختيار الفيديو: متاح</p>
- <p>معاينة الفيديو: متاحة</p>
- <p>أدوات القص والدمج: قيد التطوير</p>
+<div class="panel" id="trimPanel" hidden>
+<h2>أداة قص الفيديو</h2>
+<p>حدد نقطة بداية المقطع:</p>
+<input id="start" type="range" min="0" max="100" value="0" step="0.1">
+<div class="time"><span>البداية</span><b id="startLabel">0.0 ثانية</b></div>
+
+<p>حدد نقطة نهاية المقطع:</p>
+<input id="end" type="range" min="0" max="100" value="100" step="0.1">
+<div class="time"><span>النهاية</span><b id="endLabel">0.0 ثانية</b></div>
+
+<p class="info" id="durationLabel"></p>
+<button id="previewTrim">معاينة الجزء المحدد</button>
+<button id="stopTrim">إيقاف المعاينة</button>
+<p class="info">تحديد القص ومعاينته متاحان. تصدير الفيديو المقصوص كملف مستقل قيد التطوير.</p>
 </div>
 
 <footer>GENROX © 2026</footer>
 
 <script>
 const input=document.getElementById('videoInput');
-const preview=document.getElementById('preview');
-const area=document.getElementById('videoArea');
-const info=document.getElementById('videoInfo');
+const video=document.getElementById('preview');
+const editor=document.getElementById('editor');
+const panel=document.getElementById('trimPanel');
+const start=document.getElementById('start');
+const end=document.getElementById('end');
 let videoURL=null;
+let trimPlaying=false;
+
+function updateLabels(){
+ const a=Number(start.value);
+ const b=Number(end.value);
+ document.getElementById('startLabel').textContent=a.toFixed(1)+' ثانية';
+ document.getElementById('endLabel').textContent=b.toFixed(1)+' ثانية';
+ document.getElementById('durationLabel').textContent=
+ 'مدة الجزء المحدد: '+Math.max(0,b-a).toFixed(1)+' ثانية';
+}
 
 input.addEventListener('change',()=>{
  const file=input.files[0];
  if(!file)return;
  if(videoURL)URL.revokeObjectURL(videoURL);
  videoURL=URL.createObjectURL(file);
- preview.src=videoURL;
- area.style.display='block';
- info.textContent='اسم الفيديو: '+file.name+
- ' | الحجم: '+(file.size/1024/1024).toFixed(2)+' MB';
+ video.src=videoURL;
+ editor.hidden=false;
+ panel.hidden=false;
+ document.getElementById('videoInfo').textContent='الفيديو: '+file.name;
+ video.onloadedmetadata=()=>{
+  start.max=video.duration;
+  end.max=video.duration;
+  start.value=0;
+  end.value=video.duration;
+  updateLabels();
+ };
 });
 
-document.getElementById('removeBtn').onclick=()=>{
- preview.pause();
- preview.removeAttribute('src');
- preview.load();
- if(videoURL)URL.revokeObjectURL(videoURL);
- videoURL=null;
- input.value='';
- area.style.display='none';
- info.textContent='';
+start.addEventListener('input',()=>{
+ if(Number(start.value)>Number(end.value))start.value=end.value;
+ updateLabels();
+});
+end.addEventListener('input',()=>{
+ if(Number(end.value)<Number(start.value))end.value=start.value;
+ updateLabels();
+});
+
+document.getElementById('previewTrim').onclick=()=>{
+ if(!video.src)return;
+ trimPlaying=true;
+ video.pause();
+ video.currentTime=Number(start.value);
+ video.play();
+};
+
+video.addEventListener('timeupdate',()=>{
+ if(trimPlaying && video.currentTime>=Number(end.value)){
+  video.pause();
+  trimPlaying=false;
+ }
+});
+
+document.getElementById('stopTrim').onclick=()=>{
+ video.pause();
+ trimPlaying=false;
 };
 </script>
-
 </body>
 </html>

@@ -213,7 +213,7 @@ $("mergeBtn").onclick=async()=>{
  const mime=getMime();
  if(!mime){$("mergeStatus").textContent="صيغة التصدير غير مدعومة";return}
 
- const files=[f1,f2];
+ const files=reverseMergeOrder?[f2,f1]:[f1,f2];
  const urls=files.map(f=>URL.createObjectURL(f));
  const players=files.map(()=>{
   const v=document.createElement("video");

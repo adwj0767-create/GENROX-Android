@@ -258,6 +258,7 @@ footer {
 </footer>
 
 <script>
+
 const video = document.getElementById("video");
 const audio = document.getElementById("audio");
 const overlay = document.getElementById("overlay");
@@ -270,8 +271,8 @@ function formatTime(seconds) {
   if (!Number.isFinite(seconds)) return "00:00";
   const m = Math.floor(seconds / 60);
   const s = Math.floor(seconds % 60);
-  return String(m).padStart(2,"0") + ":" +
-         String(s).padStart(2,"0");
+  return String(m).padStart(2, "0") + ":" +
+         String(s).padStart(2, "0");
 }
 
 videoFile.addEventListener("change", e => {
@@ -311,8 +312,10 @@ video.addEventListener("pause", () => {
 
 video.addEventListener("timeupdate", () => {
   if (!video.duration) return;
+
   document.getElementById("seek").value =
     (video.currentTime / video.duration) * 100;
+
   document.getElementById("current").textContent =
     formatTime(video.currentTime);
 });
@@ -329,20 +332,40 @@ document.getElementById("speed").onchange = e => {
 };
 
 function updateText() {
-  overlay.textContent =
-    document.getElementById("textInput").value;
-  overlay.style.color =
-    document.getElementById("textColor").value;
-  overlay.style.fontSize =
-    document.getElementById("textSize").value + "px";
-  overlay.className =
-    document.getElementById("textPosition").value;
+  const textInput = document.getElementById("textInput");
+  const textColor = document.getElementById("textColor");
+  const textSize = document.getElementById("textSize");
+  const textPosition = document.getElementById("textPosition");
+
+  overlay.textContent = textInput.value;
+  overlay.style.color = textColor.value;
+  overlay.style.fontSize = textSize.value + "px";
+  overlay.className = textPosition.value;
+
+  const font = document.getElementById("textFont");
+  const shadow = document.getElementById("textShadow");
+  const stroke = document.getElementById("textStroke");
+
+  if (font) overlay.style.fontFamily = font.value;
+  if (shadow) {
+    overlay.style.textShadow =
+      shadow.checked ? "2px 2px 5px #000" : "none";
+  }
+  if (stroke) {
+    overlay.style.webkitTextStroke =
+      stroke.checked ? "1px #000" : "0px transparent";
+  }
 }
 
-["textInput","textColor","textSize","textPosition"]
-.forEach(id => {
-  document.getElementById(id).addEventListener("input",updateText);
-  document.getElementById(id).addEventListener("change",updateText);
+[
+  "textInput", "textColor", "textSize", "textPosition",
+  "textFont", "textShadow", "textStroke"
+].forEach(id => {
+  const element = document.getElementById(id);
+  if (element) {
+    element.addEventListener("input", updateText);
+    element.addEventListener("change", updateText);
+  }
 });
 
 document.getElementById("clearText").onclick = () => {
@@ -369,6 +392,7 @@ document.getElementById("volume").oninput = e => {
 
 document.getElementById("mute").onclick = () => {
   video.muted = !video.muted;
+  audio.muted = video.muted;
   document.getElementById("mute").textContent =
     video.muted ? "إلغاء كتم الصوت" : "كتم الصوت";
 };
@@ -387,6 +411,9 @@ document.getElementById("reset").onclick = () => {
   document.getElementById("seek").value = 0;
   updateText();
 };
+
+updateText();
+
 </script>
 </body>
 </html>

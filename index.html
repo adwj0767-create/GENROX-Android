@@ -47,6 +47,27 @@ a{display:none;color:#e4c477;display:block;margin-top:12px}
 </div>
 
 <div class="panel">
+ 
+<div class="panel">
+<h3>الكتابة على الفيديو</h3>
+
+<label>اكتب النص</label>
+<input id="overlayText" type="text" placeholder="اكتب هنا...">
+
+<label>لون الكتابة</label>
+<input id="overlayColor" type="color" value="#ffffff">
+
+<label>حجم الخط</label>
+<input id="overlaySize" type="range" min="16" max="80" value="36">
+
+<label>مكان الكتابة</label>
+<select id="overlayPosition">
+<option value="top">أعلى الفيديو</option>
+<option value="center" selected>منتصف الفيديو</option>
+<option value="bottom">أسفل الفيديو</option>
+</select>
+</div>
+
 <h3>دمج مقطعين فيديو</h3>
 <p class="note">اختر الفيديو الأول ثم الثاني، وسيتم دمجهما بالترتيب في ملف واحد.</p>
 

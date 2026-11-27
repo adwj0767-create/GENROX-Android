@@ -1,35 +1,24 @@
+
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>GENROX</title>
 <style>
 *{box-sizing:border-box}
-body{
- margin:0;background:#080808;color:#fff;
- font-family:Arial,sans-serif;text-align:center;padding:20px
-}
-h1{color:#d6ad55;font-size:36px;letter-spacing:3px}
-p{color:#bbb}
-.panel{
- max-width:600px;margin:20px auto;padding:18px;
- background:#171717;border:1px solid #8c6b30;
- border-radius:15px
-}
-input[type=file]{width:100%;margin:15px 0}
-video{width:100%;max-height:350px;background:#000;border-radius:10px}
-label{display:block;text-align:right;margin-top:18px;color:#e4c477}
+body{margin:0;padding:18px;background:#080808;color:white;font-family:Arial;text-align:center}
+h1{font-size:36px;color:#d6ad55;letter-spacing:3px}
+.panel{max-width:600px;margin:18px auto;padding:18px;background:#171717;border:1px solid #8c6b30;border-radius:15px}
+video{width:100%;max-height:320px;background:#000;border-radius:10px;margin-top:12px}
+input[type=file]{width:100%;margin:12px 0;color:white}
 input[type=range]{width:100%;accent-color:#d6ad55}
-.time{color:#d6ad55;margin:7px}
-button{
- width:100%;padding:14px;margin-top:12px;
- border:0;border-radius:9px;background:#c49a43;
- color:#111;font-size:17px;font-weight:bold
-}
+label{display:block;text-align:right;margin-top:15px;color:#e4c477}
+button{width:100%;padding:14px;margin-top:12px;border:0;border-radius:9px;background:#c49a43;color:#111;font-size:16px;font-weight:bold}
 button:disabled{opacity:.45}
-#status{margin-top:15px;color:#e4c477}
-#download{display:none;color:#e4c477;margin-top:15px}
+#status,#mergeStatus{color:#e4c477;margin-top:15px}
+a{display:none;color:#e4c477;display:block;margin-top:12px}
+.note{font-size:13px;color:#aaa;line-height:1.7}
 </style>
 </head>
 <body>
@@ -38,223 +27,288 @@ button:disabled{opacity:.45}
 <p>استوديو تحرير الفيديو</p>
 
 <div class="panel">
- <input id="file" type="file" accept="video/*">
+<h3>قص الفيديو</h3>
+<input id="file" type="file" accept="video/*">
+<video id="video" controls playsinline></video>
 
- <video id="video" controls playsinline></video>
+<label>بداية المقطع</label>
+<input id="start" type="range" min="0" max="0" value="0" step="0.1">
+<div id="startTime">0 ثانية</div>
 
- <label>بداية المقطع</label>
- <input id="start" type="range" min="0" max="0" value="0" step="0.1">
- <div class="time" id="startTime">0.0 ثانية</div>
+<label>نهاية المقطع</label>
+<input id="end" type="range" min="0" max="0" value="0" step="0.1">
+<div id="endTime">0 ثانية</div>
 
- <label>نهاية المقطع</label>
- <input id="end" type="range" min="0" max="0" value="0" step="0.1">
- <div class="time" id="endTime">0.0 ثانية</div>
+<button id="preview" disabled>معاينة الجزء المحدد</button>
+<button id="stop" disabled>إيقاف المعاينة</button>
+<button id="export" disabled>تصدير الجزء المقصوص</button>
+<a id="download" download="GENROX-clip.webm">تحميل الفيديو المقصوص</a>
+<div id="status">اختر فيديو للبدء</div>
+</div>
 
- <button id="preview" disabled>معاينة الجزء المحدد</button>
- <button id="stop" disabled>إيقاف المعاينة</button>
- <button id="export" disabled>تصدير الفيديو المقصوص</button>
+<div class="panel">
+<h3>دمج مقطعين فيديو</h3>
+<p class="note">اختر الفيديو الأول ثم الثاني، وسيتم دمجهما بالترتيب في ملف واحد.</p>
 
- <div id="status">اختر فيديو للبدء</div>
- <a id="download" download="GENROX-clip.webm">تحميل الفيديو المقصوص</a>
+<label>الفيديو الأول</label>
+<input id="mergeFile1" type="file" accept="video/*">
+
+<label>الفيديو الثاني</label>
+<input id="mergeFile2" type="file" accept="video/*">
+
+<button id="mergeBtn">دمج وتصدير الفيديوهين</button>
+<a id="mergeDownload" download="GENROX-merged.webm">تحميل الفيديو المدمج</a>
+<div id="mergeStatus">اختر مقطعين للبدء</div>
+<p class="note">التصدير بصيغة WebM، ويعتمد دعم الصوت على المتصفح.</p>
 </div>
 
 <script>
-const file = document.getElementById("file");
-const video = document.getElementById("video");
-const start = document.getElementById("start");
-const end = document.getElementById("end");
-const preview = document.getElementById("preview");
-const stop = document.getElementById("stop");
-const exportBtn = document.getElementById("export");
-const status = document.getElementById("status");
-const download = document.getElementById("download");
+const $=id=>document.getElementById(id);
+const video=$("video");
+let videoURL=null;
 
-let videoURL = null;
-let recording = false;
-let recorder = null;
-let animation = null;
-let chunks = [];
-
-function updateTimes(){
- document.getElementById("startTime").textContent =
- Number(start.value).toFixed(1)+" ثانية";
- document.getElementById("endTime").textContent =
- Number(end.value).toFixed(1)+" ثانية";
-}
-
-file.addEventListener("change",()=>{
- const selected = file.files[0];
- if(!selected)return;
-
- if(videoURL) URL.revokeObjectURL(videoURL);
- videoURL = URL.createObjectURL(selected);
- video.src = videoURL;
- download.style.display="none";
- status.textContent="جاري تحميل الفيديو...";
+$("file").addEventListener("change",()=>{
+ const f=$("file").files[0];
+ if(!f)return;
+ if(videoURL)URL.revokeObjectURL(videoURL);
+ videoURL=URL.createObjectURL(f);
+ video.src=videoURL;
+ $("download").style.display="none";
+ $("status").textContent="جاري تحميل الفيديو";
 });
 
 video.addEventListener("loadedmetadata",()=>{
- const duration=video.duration;
- start.max=duration;
- end.max=duration;
- start.value=0;
- end.value=duration;
+ $("start").max=video.duration;
+ $("end").max=video.duration;
+ $("start").value=0;
+ $("end").value=video.duration;
  updateTimes();
- preview.disabled=false;
- exportBtn.disabled=false;
- status.textContent="الفيديو جاهز للقص";
+ $("preview").disabled=false;
+ $("export").disabled=false;
+ $("status").textContent="الفيديو جاهز";
 });
 
-start.addEventListener("input",()=>{
- if(Number(start.value)>=Number(end.value)){
-  start.value=Math.max(0,Number(end.value)-0.1);
- }
- updateTimes();
-});
-
-end.addEventListener("input",()=>{
- if(Number(end.value)<=Number(start.value)){
-  end.value=Math.min(video.duration,Number(start.value)+0.1);
- }
- updateTimes();
-});
-
-function stopPreview(){
- video.pause();
- stop.disabled=true;
- preview.disabled=false;
+function updateTimes(){
+ $("startTime").textContent=Number($("start").value).toFixed(1)+" ثانية";
+ $("endTime").textContent=Number($("end").value).toFixed(1)+" ثانية";
 }
 
-preview.addEventListener("click",async()=>{
- if(!video.src)return;
- video.currentTime=Number(start.value);
+$("start").addEventListener("input",()=>{
+ if(+$("start").value>=+$("end").value)
+  $("start").value=Math.max(0,+$("end").value-.1);
+ updateTimes();
+});
+
+$("end").addEventListener("input",()=>{
+ if(+$("end").value<=+$("start").value)
+  $("end").value=Math.min(video.duration,+$("start").value+.1);
+ updateTimes();
+});
+
+$("preview").onclick=async()=>{
+ video.currentTime=+$("start").value;
  await video.play();
- preview.disabled=true;
- stop.disabled=false;
- status.textContent="جاري معاينة الجزء المحدد...";
- const finish=()=>{
-  if(video.currentTime>=Number(end.value)){
-   stopPreview();
-   status.textContent="انتهت المعاينة";
-  }else{
-   requestAnimationFrame(finish);
-  }
+ $("preview").disabled=true;
+ $("stop").disabled=false;
+ $("status").textContent="جاري المعاينة";
+ const check=()=>{
+  if(video.currentTime>=+$("end").value){
+   video.pause();
+   $("preview").disabled=false;
+   $("stop").disabled=true;
+   $("status").textContent="انتهت المعاينة";
+  }else requestAnimationFrame(check);
  };
- requestAnimationFrame(finish);
-});
+ requestAnimationFrame(check);
+};
 
-stop.addEventListener("click",()=>{
- stopPreview();
- status.textContent="تم إيقاف المعاينة";
-});
+$("stop").onclick=()=>{
+ video.pause();
+ $("preview").disabled=false;
+ $("stop").disabled=true;
+ $("status").textContent="تم إيقاف المعاينة";
+};
 
-exportBtn.addEventListener("click",async()=>{
- if(recording)return;
+function getMime(){
+ const types=["video/webm;codecs=vp8,opus","video/webm;codecs=vp8","video/webm"];
+ return types.find(t=>MediaRecorder.isTypeSupported(t));
+}
 
- if(!window.MediaRecorder || !HTMLCanvasElement.prototype.captureStream){
-  status.textContent="متصفحك لا يدعم تصدير الفيديو بهذه الطريقة.";
+$("export").onclick=async()=>{
+ if(!video.videoWidth||!window.MediaRecorder){
+  $("status").textContent="التصدير غير مدعوم في المتصفح";
   return;
  }
+ const mime=getMime();
+ if(!mime){$("status").textContent="صيغة التصدير غير مدعومة";return}
 
  const canvas=document.createElement("canvas");
- const ctx=canvas.getContext("2d");
  canvas.width=video.videoWidth;
  canvas.height=video.videoHeight;
-
- const canvasStream=canvas.captureStream(30);
- let tracks=[...canvasStream.getVideoTracks()];
-
+ const ctx=canvas.getContext("2d");
+ const stream=canvas.captureStream(30);
  let sourceStream=null;
+
  try{
-  const capture=video.captureStream || video.mozCaptureStream;
+  const capture=video.captureStream||video.mozCaptureStream;
   if(capture){
    sourceStream=capture.call(video);
-   tracks.push(...sourceStream.getAudioTracks());
+   sourceStream.getAudioTracks().forEach(t=>stream.addTrack(t));
   }
  }catch(e){}
 
- const stream=new MediaStream(tracks);
- let mime="video/webm;codecs=vp8,opus";
- if(!MediaRecorder.isTypeSupported(mime)){
-  mime="video/webm";
- }
- if(!MediaRecorder.isTypeSupported(mime)){
-  status.textContent="التصدير غير مدعوم في هذا المتصفح.";
-  return;
- }
+ const chunks=[];
+ const recorder=new MediaRecorder(stream,{mimeType:mime});
+ const from=+$("start").value,to=+$("end").value;
 
- chunks=[];
- try{
-  recorder=new MediaRecorder(stream,{mimeType:mime});
- }catch(e){
-  status.textContent="تعذر بدء التصدير.";
-  return;
- }
-
- const from=Number(start.value);
- const to=Number(end.value);
-
- recorder.ondataavailable=e=>{
-  if(e.data && e.data.size>0)chunks.push(e.data);
- };
-
+ recorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
  recorder.onstop=()=>{
-  recording=false;
-  cancelAnimationFrame(animation);
-  const blob=new Blob(chunks,{type:"video/webm"});
-  const url=URL.createObjectURL(blob);
-  download.href=url;
-  download.style.display="inline-block";
-  status.textContent="تم إنشاء الفيديو. اضغط على رابط التحميل.";
-  exportBtn.disabled=false;
-  stop.disabled=true;
-  preview.disabled=false;
+  const blob=new Blob(chunks,{type:mime});
+  $("download").href=URL.createObjectURL(blob);
+  $("download").style.display="block";
+  $("status").textContent="تم إنشاء الملف";
+  $("export").disabled=false;
   stream.getTracks().forEach(t=>t.stop());
   if(sourceStream)sourceStream.getTracks().forEach(t=>t.stop());
  };
 
  video.pause();
+ $("export").disabled=true;
  video.currentTime=from;
-
- await new Promise(resolve=>{
-  video.addEventListener("seeked",resolve,{once:true});
- });
-
- function draw(){
-  if(video.readyState>=2){
-   ctx.drawImage(video,0,0,canvas.width,canvas.height);
-  }
-  if(recording && video.currentTime<to){
-   animation=requestAnimationFrame(draw);
-  }
- }
+ await new Promise(resolve=>video.addEventListener("seeked",resolve,{once:true}));
 
  recorder.start();
- recording=true;
- exportBtn.disabled=true;
- preview.disabled=true;
- stop.disabled=true;
- status.textContent="جاري تصدير الفيديو... انتظر حتى ينتهي";
+ await video.play();
 
+ const draw=()=>{
+  if(video.readyState>=2)ctx.drawImage(video,0,0,canvas.width,canvas.height);
+  if(video.currentTime<to&& !video.paused)
+   requestAnimationFrame(draw);
+ };
  draw();
- try{
-  await video.play();
- }catch(e){
-  recorder.stop();
+
+ const check=()=>{
+  if(video.currentTime>=to||video.ended){
+   video.pause();
+   if(recorder.state!=="inactive")recorder.stop();
+  }else setTimeout(check,100);
+ };
+ check();
+};
+
+// دمج مقطعين
+$("mergeBtn").onclick=async()=>{
+ const f1=$("mergeFile1").files[0];
+ const f2=$("mergeFile2").files[0];
+
+ if(!f1||!f2){
+  $("mergeStatus").textContent="اختر الفيديو الأول والثاني";
+  return;
+ }
+ if(!window.MediaRecorder||!HTMLCanvasElement.prototype.captureStream){
+  $("mergeStatus").textContent="متصفحك لا يدعم الدمج";
   return;
  }
 
- const checkEnd=()=>{
-  if(!recording)return;
-  if(video.currentTime>=to || video.ended){
-   video.pause();
-   recorder.stop();
-  }else{
-   setTimeout(checkEnd,100);
+ const mime=getMime();
+ if(!mime){$("mergeStatus").textContent="صيغة التصدير غير مدعومة";return}
+
+ const files=[f1,f2];
+ const urls=files.map(f=>URL.createObjectURL(f));
+ const players=files.map(()=>{
+  const v=document.createElement("video");
+  v.playsInline=true;
+  v.preload="auto";
+  v.muted=true;
+  return v;
+ });
+
+ $("mergeBtn").disabled=true;
+ $("mergeDownload").style.display="none";
+ $("mergeStatus").textContent="جاري تجهيز المقطعين";
+
+ let audioCtx;
+ let audioDest;
+ const canvas=document.createElement("canvas");
+ const ctx=canvas.getContext("2d");
+
+ try{
+  for(let i=0;i<2;i++){
+   players[i].src=urls[i];
+   await new Promise((resolve,reject)=>{
+    players[i].onloadedmetadata=resolve;
+    players[i].onerror=reject;
+    players[i].load();
+   });
   }
- };
- checkEnd();
-});
+
+  canvas.width=players[0].videoWidth||640;
+  canvas.height=players[0].videoHeight||360;
+
+  audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+  await audioCtx.resume();
+  audioDest=audioCtx.createMediaStreamDestination();
+
+  const audioSources=players.map(v=>{
+   const source=audioCtx.createMediaElementSource(v);
+   source.connect(audioDest);
+   return source;
+  });
+
+  const stream=canvas.captureStream(30);
+  audioDest.stream.getAudioTracks().forEach(t=>stream.addTrack(t));
+
+  const chunks=[];
+  const recorder=new MediaRecorder(stream,{mimeType:mime});
+
+  recorder.ondataavailable=e=>{if(e.data.size)chunks.push(e.data)};
+
+  const finished=new Promise(resolve=>{
+   recorder.onstop=()=>{
+    const blob=new Blob(chunks,{type:mime});
+    $("mergeDownload").href=URL.createObjectURL(blob);
+    $("mergeDownload").style.display="block";
+    $("mergeStatus").textContent="تم دمج المقطعين. اضغط تحميل الفيديو المدمج.";
+    resolve();
+   };
+  });
+
+  recorder.start();
+
+  for(let i=0;i<2;i++){
+   const v=players[i];
+   v.currentTime=0;
+   await v.play();
+
+   await new Promise(resolve=>{
+    function draw(){
+     if(v.readyState>=2)ctx.drawImage(v,0,0,canvas.width,canvas.height);
+     if(v.ended){
+      resolve();
+      return;
+     }
+     requestAnimationFrame(draw);
+    }
+    draw();
+   });
+
+   v.pause();
+  }
+
+  recorder.stop();
+  await finished;
+  stream.getTracks().forEach(t=>t.stop());
+  await audioCtx.close();
+
+ }catch(err){
+  $("mergeStatus").textContent="تعذر الدمج. جرّب فيديوهين بصيغة مدعومة.";
+  if(audioCtx&&audioCtx.state!=="closed")await audioCtx.close();
+ }finally{
+  players.forEach(v=>{v.pause();v.removeAttribute("src");v.load()});
+  urls.forEach(URL.revokeObjectURL);
+  $("mergeBtn").disabled=false;
+ }
+};
 </script>
 </body>
 </html>

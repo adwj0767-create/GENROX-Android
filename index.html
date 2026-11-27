@@ -233,7 +233,9 @@ $("export").onclick=async()=>{
 
  const draw=()=>{
   if(video.readyState>=2)ctx.drawImage(video,0,0,canvas.width,canvas.height);
+ drawOverlayText(ctx,canvas);
   if(video.currentTime<to&& !video.paused)
+  
    requestAnimationFrame(draw);
  };
  draw();

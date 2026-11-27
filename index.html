@@ -65,7 +65,7 @@ a{display:none;color:#e4c477;display:block;margin-top:12px}
 <script>
 const $=id=>document.getElementById(id);
 const video=$("video");
-let videoURL=null;
+let reverseMergeOrder=false;
 
 $("file").addEventListener("change",()=>{
  const f=$("file").files[0];
